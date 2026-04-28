@@ -22,7 +22,6 @@ void RtpSource::slot_receiveRtp()
                      <<"payload="<<header->payload<<" m"<<header->m<<" seqNumber="<<header->seqNumber
                      <<"timeStamp="<<header->timestamp<<" ssrc="<<header->ssrc;
 
-            QThread::msleep(1000);
             int nLength=12;
             nLength+=header->cc*4;
             auto frameData=data.mid(nLength);
@@ -42,6 +41,7 @@ void RtpSource::slot_receiveRtp()
             auto newRtpData=new rtpData;
             newRtpData->data=frameData;
             newRtpData->seqNumber=header->seqNumber;
+            newRtpData->arriveTime.start();
             storagePacket(newRtpData);
         }
     }
@@ -69,6 +69,7 @@ void RtpSource::storagePacket(rtpData *pRtpData)
     if(head==nullptr)
     {
         head=pRtpData;
+        m_nExpectSeq=head->seqNumber;
     }
     else
     {
@@ -92,7 +93,7 @@ void RtpSource::storagePacket(rtpData *pRtpData)
                     tail=pRtpData;
                 }
                 else{
-                    auto cursor=head->next;
+                    auto cursor=head;
                     while(cursor)
                     {
                         if(cursor->next==nullptr)
@@ -132,5 +133,30 @@ void RtpSource::storagePacket(rtpData *pRtpData)
         qDebug()<<cursor->seqNumber;
         cursor=cursor->next;
     }
+    tryDeliverPackets();
     qDebug()<<"    end";
+}
+
+void RtpSource::tryDeliverPackets()
+{
+    while(head)
+    {
+        if(head->seqNumber==m_nExpectSeq)
+        {
+            emit rtpParseData(head->data);
+            auto oldHead= head;
+            head=head->next;
+            if(!head) tail=nullptr;
+            delete oldHead;
+            m_nExpectSeq++;
+        }
+        else if(head->arriveTime.elapsed()>100)
+        {
+            m_nExpectSeq = head->seqNumber;
+        }
+        else
+        {
+            break;
+        }
+    }
 }

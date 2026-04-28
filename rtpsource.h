@@ -4,6 +4,7 @@
 #include <QtEndian>
 #include <QUdpSocket>
 #include <QObject>
+#include <QElapsedTimer>
 typedef  struct{
     quint8 cc:4;
     quint8 x:1;
@@ -24,10 +25,11 @@ struct rtpData{
     qint32 seqNumber;
     QByteArray data;
     rtpData*next=nullptr;
-
+ QElapsedTimer arriveTime;
 };
 class RtpSource : public QUdpSocket
 {
+    Q_OBJECT
 public:
     RtpSource(QObject *parent=nullptr);
 public slots:
@@ -35,9 +37,13 @@ public slots:
 private:
     bool seqNumLt(quint16 s1,quint16 s2);
     void storagePacket(rtpData *data);
+    void tryDeliverPackets();
+signals:
+    void rtpParseData(const QByteArray& data);
 private:
     rtpData*head=nullptr;
     rtpData*tail=nullptr;
+    quint16 m_nExpectSeq=0;
 };
 
 #endif // RTPSOURCE_H
