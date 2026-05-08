@@ -109,7 +109,8 @@ void H264NaluParse::parsePacket(const QByteArray& data)
             }
             if(fuFlag==0x02)
             {
-                outPutFrame(m_FrameByteArray);
+                if(!m_FrameByteArray.isEmpty())
+                    outPutFrame(m_FrameByteArray);
 
                 m_FrameByteArray.clear();
             }
@@ -138,12 +139,25 @@ void H264NaluParse::outPutFrame(const QByteArray &data)
     }
     else if(type==5)//idr帧 给他补上 sps和pps
     {
+        m_bWaitIDRFrame=false;
+        if(m_LastPpsFrameData.isEmpty() || m_LastSpsFrameData.isEmpty())
+        {
+            qDebug() << "IDR without SPS/PPS, dropped!";
+            return;    // ★ 没有 SPS/PPS，丢弃 IDR
+        }
         if(!m_LastPpsFrameData.isEmpty()&&!m_LastSpsFrameData.isEmpty())
         {
             emit sig_EmitNewFrame(START_CODE+m_LastSpsFrameData);
             emit sig_EmitNewFrame(START_CODE+m_LastPpsFrameData);
         }
     }
+
     emit sig_EmitNewFrame(START_CODE+data);
 
+}
+
+void H264NaluParse::slot_lostFrame()
+{
+    // m_bWaitIDRFrame=true;
+    m_FrameByteArray.clear();
 }

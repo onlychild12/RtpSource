@@ -40,6 +40,7 @@ private:
     void tryDeliverPackets();
 signals:
     void rtpParseData(const QByteArray& data);
+    void lostFrame();
 private:
     rtpData*head=nullptr;
     rtpData*tail=nullptr;

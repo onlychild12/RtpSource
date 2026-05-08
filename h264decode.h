@@ -1,6 +1,6 @@
 #ifndef H264DECODE_H
 #define H264DECODE_H
-
+#include <QImage>
 #include <QObject>
 extern "C"{
 #include <libavcodec/avcodec.h>
@@ -16,15 +16,17 @@ public:
     void esureSwsContext(int nWidth,int nHeight,AVPixelFormat sourceFormat);
     void init();
 public slots:
-    void decodeFrame(const QByteArray&data);
+    void decodeFrame(QByteArray data);
+    void slot_flush();
 signals:
-
+      void lostFrame();
+    void sig_emitImageFrame(QImage image);
 private:
     AVCodecContext *m_avContext=nullptr;
     const AVCodec *m_avCodec=nullptr;
     SwsContext *m_swsContext=nullptr;
     AVFrame *m_pAvFrame;
-    AVPacket *m_pAvPacket;
+    AVPacket *m_pAvPacket=nullptr;
     int m_nWidth=0;
     int m_nHeight=0;
 };

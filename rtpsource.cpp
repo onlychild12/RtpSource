@@ -153,6 +153,7 @@ void RtpSource::tryDeliverPackets()
         else if(head->arriveTime.elapsed()>100)
         {
             m_nExpectSeq = head->seqNumber;
+            lostFrame();
         }
         else
         {
